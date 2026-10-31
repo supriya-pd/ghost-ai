@@ -8,7 +8,7 @@ Update this file whenever the current phase, active feature, or implementation s
 
 ## Current Goal
 
-- Implement the design system foundation and UI primitives defined in `context/feature-specs/01-design-system.md`.
+- Implement the editor chrome defined in `context/feature-specs/02-editor-chrome.md`.
 
 ## Completed
 
@@ -16,6 +16,9 @@ Update this file whenever the current phase, active feature, or implementation s
 - Added Button, Card, Dialog, Input, Tabs, Textarea, and ScrollArea primitives.
 - Added the reusable `cn()` helper in `lib/utils.ts`.
 - Applied the dark Ghost AI design tokens in `app/globals.css`.
+- Added the reusable editor navbar with sidebar toggle state and left, center, and right sections.
+- Added the floating project sidebar with slide-in behavior, project tabs, empty states, and New Project action.
+- Confirmed the existing dialog primitives support token-based title, description, and footer action patterns.
 
 ## In Progress
 
@@ -37,3 +40,4 @@ Update this file whenever the current phase, active feature, or implementation s
 
 - Design-system primitives pass lint and production build validation.
 - Corrected the home page to import the local shadcn Button instead of Radix's toolbar item; lint and production build pass.
+- Editor chrome components were added with token-based styling and callback-driven interactions.
