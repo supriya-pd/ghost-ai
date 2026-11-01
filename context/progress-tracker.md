@@ -8,7 +8,7 @@ Update this file whenever the current phase, active feature, or implementation s
 
 ## Current Goal
 
-- Implement the project dialogs and editor home defined in `context/feature-specs/04-project-dialogs.md`.
+- Implement the backend project API routes defined in `context/feature-specs/06-project-apis.md`.
 
 ## Completed
 
@@ -28,6 +28,13 @@ Update this file whenever the current phase, active feature, or implementation s
 - Added the dedicated project dialog hook for create, rename, and delete form/dialog state.
 - Added create, rename, and destructive delete dialogs with live slug preview and Enter-to-submit rename behavior.
 - Wired owner-only sidebar actions, shared-project action hiding, and the mobile sidebar backdrop scrim.
+- Added the `ProjectStatus`, `Project`, and `ProjectCollaborator` Prisma models with the required relations, indexes, uniqueness constraint, and cascade behavior.
+- Added the cached `lib/prisma.ts` singleton with Prisma Accelerate and direct PostgreSQL adapter branches.
+- Configured Prisma to load the split schema directory and generated the Prisma client under `app/generated/prisma`.
+- Created and applied the initial PostgreSQL migration at `prisma/migrations/20261101141401_init`.
+- Added authenticated project list and create route handlers at `/api/projects`.
+- Added owner-only project rename and delete route handlers at `/api/projects/[projectId]`.
+- Added `401` responses for unauthenticated requests, `403` responses for non-owner mutations, and validation for project names.
 
 ## In Progress
 
@@ -35,11 +42,11 @@ Update this file whenever the current phase, active feature, or implementation s
 
 ## Next Up
 
-- Begin the next planned feature unit after reviewing the project-dialog implementation.
+- Begin the next planned feature unit after verifying the project API implementation.
 
 ## Open Questions
 
-- Add unresolved product or implementation questions here.
+- The local `.env` currently exposes the database connection under the misspelled `DATABSE_URL` key; Prisma commands were run with that value mapped to the required `DATABASE_URL` name. Rename the local key before relying on automatic environment loading.
 
 ## Architecture Decisions
 
@@ -54,3 +61,6 @@ Update this file whenever the current phase, active feature, or implementation s
 - Authentication implementation passes `npm run lint` and `npm run build`.
 - Next.js 16 request-time auth checks use `instant = false`, and Clerk forms render behind Suspense boundaries as required by Cache Components.
 - Project dialogs and editor home pass `npm run lint` and strict TypeScript validation; the feature intentionally uses mock state with no API or persistence.
+- Prisma schema validation, client generation, and the initial migration pass with Prisma 7.10.1 using the installed Node 26 runtime.
+- Project API handlers use Clerk's authenticated user ID as `ownerId`, Prisma's generated `cuid()` IDs, and JSON responses with conventional `201`, `204`, `400`, `401`, `403`, and `404` statuses.
+- Project API handlers pass `npm run lint` and `npm run build`.
