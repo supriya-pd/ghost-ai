@@ -1,4 +1,4 @@
-import { auth } from "@clerk/nextjs/server";
+import { auth, currentUser } from "@clerk/nextjs/server";
 import { prisma } from "@/lib/prisma";
 
 const defaultProjectName = "Untitled Project";
@@ -42,8 +42,16 @@ export async function GET() {
     return errorResponse("Authentication required.", 401);
   }
 
+  let collaboratorEmail: string | undefined;
+  try {
+    collaboratorEmail = (await currentUser())?.primaryEmailAddress?.emailAddress;
+  } catch {
+    collaboratorEmail = undefined;
+  }
   const projects = await prisma.project.findMany({
-    where: { ownerId: userId },
+    where: collaboratorEmail
+      ? { OR: [{ ownerId: userId }, { collaborators: { some: { collaboratorEmail } } }] }
+      : { ownerId: userId },
     orderBy: { updatedAt: "desc" },
   });
 

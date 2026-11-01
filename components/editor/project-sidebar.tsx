@@ -3,7 +3,7 @@
 import { Pencil, Plus, Trash2, X } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
-import type { Project } from "@/components/editor/use-project-dialogs"
+import type { Project } from "@/hooks/use-project-actions"
 import {
   Tabs,
   TabsContent,

@@ -12,7 +12,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
-import type { Project } from "@/components/editor/use-project-dialogs"
+import type { Project } from "@/hooks/use-project-actions"
 
 interface ProjectDialogsProps {
   activeDialog: "create" | "rename" | "delete" | null
@@ -20,6 +20,7 @@ interface ProjectDialogsProps {
   projectName: string
   slugPreview: string
   isLoading: boolean
+  error: string | null
   onClose: () => void
   onNameChange: (name: string) => void
   onCreate: () => void
@@ -33,6 +34,7 @@ export function ProjectDialogs({
   projectName,
   slugPreview,
   isLoading,
+  error,
   onClose,
   onNameChange,
   onCreate,
@@ -63,6 +65,7 @@ export function ProjectDialogs({
                 Slug: <span className="font-mono text-copy-secondary">{slugPreview || "your-project-slug"}</span>
               </p>
             </div>
+            {error && <p className="text-sm text-state-error">{error}</p>}
             <DialogFooter>
               <Button type="button" variant="ghost" onClick={onClose}>Cancel</Button>
               <Button type="submit" disabled={!projectName.trim() || isLoading}>Create project</Button>
@@ -89,6 +92,7 @@ export function ProjectDialogs({
                 onChange={(event) => onNameChange(event.target.value)}
               />
             </div>
+            {error && <p className="text-sm text-state-error">{error}</p>}
             <DialogFooter>
               <Button type="button" variant="ghost" onClick={onClose}>Cancel</Button>
               <Button type="submit" disabled={!projectName.trim() || isLoading}>Save changes</Button>
@@ -105,6 +109,7 @@ export function ProjectDialogs({
               This will remove “{selectedProject?.name}” from your projects.
             </DialogDescription>
           </DialogHeader>
+          {error && <p className="text-sm text-state-error">{error}</p>}
           <DialogFooter>
             <Button type="button" variant="ghost" onClick={onClose}>Cancel</Button>
             <Button type="button" variant="destructive" disabled={isLoading} onClick={onDelete}>

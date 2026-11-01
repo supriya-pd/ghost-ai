@@ -8,7 +8,7 @@ Update this file whenever the current phase, active feature, or implementation s
 
 ## Current Goal
 
-- Implement the backend project API routes defined in `context/feature-specs/06-project-apis.md`.
+- Wire the editor home to the real project API defined in `context/feature-specs/07-wire-editor-home.md`.
 
 ## Completed
 
@@ -35,6 +35,11 @@ Update this file whenever the current phase, active feature, or implementation s
 - Added authenticated project list and create route handlers at `/api/projects`.
 - Added owner-only project rename and delete route handlers at `/api/projects/[projectId]`.
 - Added `401` responses for unauthenticated requests, `403` responses for non-owner mutations, and validation for project names.
+- Added the server-side editor project loader for owned and collaborator projects.
+- Replaced mock editor projects with server-loaded project data.
+- Added `useProjectActions` for API-backed create, rename, and delete mutations with navigation and refresh behavior.
+- Added room ID preview generation and surfaced mutation errors in the project dialogs.
+- Extended `GET /api/projects` to include projects shared with the authenticated user's primary email.
 
 ## In Progress
 
@@ -42,7 +47,7 @@ Update this file whenever the current phase, active feature, or implementation s
 
 ## Next Up
 
-- Begin the next planned feature unit after verifying the project API implementation.
+- Begin the next planned feature unit after verifying the wired editor home implementation.
 
 ## Open Questions
 
@@ -64,3 +69,6 @@ Update this file whenever the current phase, active feature, or implementation s
 - Prisma schema validation, client generation, and the initial migration pass with Prisma 7.10.1 using the installed Node 26 runtime.
 - Project API handlers use Clerk's authenticated user ID as `ownerId`, Prisma's generated `cuid()` IDs, and JSON responses with conventional `201`, `204`, `400`, `401`, `403`, and `404` statuses.
 - Project API handlers pass `npm run lint` and `npm run build`.
+- Editor home wiring passes lint and build validation; workspace route behavior remains reserved for the canvas feature unit.
+- The editor route uses Next.js 16's `instant = false` directive because its server-side project loader depends on authenticated runtime data.
+- Hardened editor project loading against transient Clerk `currentUser()` aborts so the `/editor` route does not enter a retry/compile-looking failure loop.
