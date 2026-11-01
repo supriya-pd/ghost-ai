@@ -41,3 +41,4 @@ Update this file whenever the current phase, active feature, or implementation s
 - Design-system primitives pass lint and production build validation.
 - Corrected the home page to import the local shadcn Button instead of Radix's toolbar item; lint and production build pass.
 - Editor chrome components were added with token-based styling and callback-driven interactions.
+- Tightened the project sidebar contract and accessibility behavior: New Project requires an action, closed state is inert, and the panel begins below the navbar.

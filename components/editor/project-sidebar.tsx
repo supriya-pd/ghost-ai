@@ -13,7 +13,7 @@ import {
 interface ProjectSidebarProps {
   isOpen: boolean
   onClose: () => void
-  onNewProject?: () => void
+  onNewProject: () => void
 }
 
 function EmptyProjectState() {
@@ -33,7 +33,8 @@ export function ProjectSidebar({
     <aside
       aria-hidden={!isOpen}
       aria-label="Project navigation"
-      className={`fixed inset-y-4 left-4 z-40 flex w-72 flex-col rounded-2xl border border-surface-border bg-bg-surface shadow-2xl transition-transform duration-200 ease-out ${
+      inert={!isOpen}
+      className={`fixed top-14 bottom-4 left-4 z-40 flex w-72 flex-col rounded-2xl border border-surface-border bg-bg-surface shadow-2xl transition-transform duration-200 ease-out ${
         isOpen ? "translate-x-0" : "-translate-x-[calc(100%+1rem)]"
       }`}
     >
