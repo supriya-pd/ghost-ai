@@ -8,7 +8,7 @@ Update this file whenever the current phase, active feature, or implementation s
 
 ## Current Goal
 
-- Implement the authentication foundation defined in `context/feature-specs/03-auth.md`.
+- Implement the project dialogs and editor home defined in `context/feature-specs/04-project-dialogs.md`.
 
 ## Completed
 
@@ -24,6 +24,10 @@ Update this file whenever the current phase, active feature, or implementation s
 - Configured the root `proxy.ts` to keep the root and Clerk auth paths public while protecting all other matched routes.
 - Updated `/` to redirect authenticated users to `/editor` and unauthenticated users to `/sign-in`.
 - Added Clerk's built-in UserButton to the editor navbar and a minimal editor shell for the authenticated destination.
+- Added the editor home empty state with a `New Project` action and mock project data.
+- Added the dedicated project dialog hook for create, rename, and delete form/dialog state.
+- Added create, rename, and destructive delete dialogs with live slug preview and Enter-to-submit rename behavior.
+- Wired owner-only sidebar actions, shared-project action hiding, and the mobile sidebar backdrop scrim.
 
 ## In Progress
 
@@ -31,7 +35,7 @@ Update this file whenever the current phase, active feature, or implementation s
 
 ## Next Up
 
-- Begin the next planned feature unit.
+- Begin the next planned feature unit after reviewing the project-dialog implementation.
 
 ## Open Questions
 
@@ -49,3 +53,4 @@ Update this file whenever the current phase, active feature, or implementation s
 - Tightened the project sidebar contract and accessibility behavior: New Project requires an action, closed state is inert, and the panel begins below the navbar.
 - Authentication implementation passes `npm run lint` and `npm run build`.
 - Next.js 16 request-time auth checks use `instant = false`, and Clerk forms render behind Suspense boundaries as required by Cache Components.
+- Project dialogs and editor home pass `npm run lint` and strict TypeScript validation; the feature intentionally uses mock state with no API or persistence.
