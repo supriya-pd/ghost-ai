@@ -46,7 +46,6 @@ export function EditorShell({ ownedProjects, sharedProjects }: EditorShellProps)
         activeDialog={actions.activeDialog}
         selectedProject={actions.selectedProject}
         projectName={actions.projectName}
-        slugPreview={actions.slugPreview}
         isLoading={actions.isLoading}
         error={actions.error}
         onClose={actions.closeDialog}

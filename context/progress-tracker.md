@@ -8,7 +8,7 @@ Update this file whenever the current phase, active feature, or implementation s
 
 ## Current Goal
 
-- Wire the editor home to the real project API defined in `context/feature-specs/07-wire-editor-home.md`.
+- Build the server-checked editor workspace shell defined in `context/feature-specs/08-editor-workspace-shell.md`.
 
 ## Completed
 
@@ -40,6 +40,14 @@ Update this file whenever the current phase, active feature, or implementation s
 - Added `useProjectActions` for API-backed create, rename, and delete mutations with navigation and refresh behavior.
 - Added room ID preview generation and surfaced mutation errors in the project dialogs.
 - Extended `GET /api/projects` to include projects shared with the authenticated user's primary email.
+- Removed the create dialog's client-generated room ID preview because project creation persists a server-generated project ID, and kept successful creation on the existing `/editor` route.
+- Updated the auth proxy to let `/api/*` handlers return their own JSON authentication responses while preserving protection for other non-public routes.
+- Added server-side Clerk identity and owner/collaborator project access helpers in `lib/project-access.ts`.
+- Added the `/editor/[roomId]` server route with sign-in redirects and `AccessDenied` handling for missing or unauthorized projects.
+- Added the full-viewport editor workspace shell with project context, active project navigation, canvas placeholder, share control, and toggleable AI sidebar placeholder.
+- Fixed new project creation to open the newly created project's `/editor/[roomId]` workspace using the ID returned by the create API.
+- Routed editor authentication through the server pages so signed-out room links use the custom sign-in shell instead of Clerk middleware's standalone fallback.
+- Made the sign-in and sign-up Clerk links explicitly target the app's custom `/sign-in` and `/sign-up` routes, keeping the branded auth shell during navigation.
 
 ## In Progress
 
@@ -47,7 +55,7 @@ Update this file whenever the current phase, active feature, or implementation s
 
 ## Next Up
 
-- Begin the next planned feature unit after verifying the wired editor home implementation.
+- Begin the next planned feature unit after verifying the editor workspace shell implementation.
 
 ## Open Questions
 
@@ -72,3 +80,9 @@ Update this file whenever the current phase, active feature, or implementation s
 - Editor home wiring passes lint and build validation; workspace route behavior remains reserved for the canvas feature unit.
 - The editor route uses Next.js 16's `instant = false` directive because its server-side project loader depends on authenticated runtime data.
 - Hardened editor project loading against transient Clerk `currentUser()` aborts so the `/editor` route does not enter a retry/compile-looking failure loop.
+- Updated the production build script to generate the Prisma client before compiling Next.js.
+- Updated the Clerk card appearance override to use structured border and box-shadow styles.
+- Workspace access is checked by project ID against the authenticated Clerk user ID or primary email collaborator record; sharing remains intentionally disabled until its feature unit.
+- Editor workspace lint and strict TypeScript validation pass. Production build validation is currently blocked before Next compilation by the existing Prisma 7 / Node 20 ESM-CJS incompatibility in `@prisma/dev`.
+- Create-project navigation now validates the API response before routing, so a malformed success response surfaces an actionable error instead of navigating to the editor home.
+- Editor routes remain protected by server-side identity checks, with room links preserving their destination in the sign-in redirect.

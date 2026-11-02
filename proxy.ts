@@ -7,9 +7,11 @@ const isPublicRoute = createRouteMatcher([
   `${signInRoute}(.*)`,
   `${signUpRoute}(.*)`,
 ]);
+const isApiRoute = createRouteMatcher(['/api(.*)']);
+const isEditorRoute = createRouteMatcher(['/editor(.*)']);
 
 export default clerkMiddleware(async (auth, request) => {
-  if (!isPublicRoute(request)) {
+  if (!isPublicRoute(request) && !isApiRoute(request) && !isEditorRoute(request)) {
     await auth.protect();
   }
 });

@@ -18,7 +18,6 @@ interface ProjectDialogsProps {
   activeDialog: "create" | "rename" | "delete" | null
   selectedProject: Project | null
   projectName: string
-  slugPreview: string
   isLoading: boolean
   error: string | null
   onClose: () => void
@@ -32,7 +31,6 @@ export function ProjectDialogs({
   activeDialog,
   selectedProject,
   projectName,
-  slugPreview,
   isLoading,
   error,
   onClose,
@@ -61,9 +59,6 @@ export function ProjectDialogs({
                 onChange={(event) => onNameChange(event.target.value)}
                 placeholder="e.g. Payments platform"
               />
-              <p className="text-xs text-copy-muted">
-                Slug: <span className="font-mono text-copy-secondary">{slugPreview || "your-project-slug"}</span>
-              </p>
             </div>
             {error && <p className="text-sm text-state-error">{error}</p>}
             <DialogFooter>

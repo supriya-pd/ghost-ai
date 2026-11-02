@@ -10,7 +10,6 @@ interface UseProjectActionsResult {
   activeDialog: ProjectDialog
   selectedProject: Project | null
   projectName: string
-  slugPreview: string
   isLoading: boolean
   error: string | null
   openCreate: () => void
@@ -32,6 +31,17 @@ async function getError(response: Response) {
   return body?.error ?? "Something went wrong. Please try again."
 }
 
+async function getCreatedProjectId(response: Response) {
+  const body = (await response.json().catch(() => null)) as { project?: { id?: unknown } } | null
+  const projectId = body?.project?.id
+
+  if (typeof projectId !== "string" || projectId.length === 0) {
+    throw new Error("Project was created, but its workspace could not be opened.")
+  }
+
+  return projectId
+}
+
 export function projectFromData(project: { id: string; name: string; isOwner: boolean }): Project {
   return { ...project, slug: slugify(project.name) || "untitled-project" }
 }
@@ -43,7 +53,6 @@ export function useProjectActions(): UseProjectActionsResult {
   const [projectName, setProjectName] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [suffix] = useState(() => Math.random().toString(36).slice(2, 7))
   const closeDialog = () => { setActiveDialog(null); setSelectedProject(null); setProjectName(""); setError(null) }
   const openCreate = () => { setSelectedProject(null); setProjectName(""); setError(null); setActiveDialog("create") }
   const openRename = (project: Project) => { setSelectedProject(project); setProjectName(project.name); setError(null); setActiveDialog("rename") }
@@ -55,8 +64,8 @@ export function useProjectActions(): UseProjectActionsResult {
     try {
       const response = await fetch("/api/projects", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name }) })
       if (!response.ok) throw new Error(await getError(response))
-      const body = (await response.json()) as { project: { id: string } }
-      closeDialog(); router.push(`/editor/${body.project.id}`)
+      const projectId = await getCreatedProjectId(response)
+      closeDialog(); router.push(`/editor/${projectId}`)
     } catch (cause) { setError(cause instanceof Error ? cause.message : "Unable to create project.") }
     finally { setIsLoading(false) }
   }
@@ -83,7 +92,5 @@ export function useProjectActions(): UseProjectActionsResult {
     finally { setIsLoading(false) }
   }
 
-  const baseSlug = slugify(projectName)
-  const slugPreview = baseSlug ? `${baseSlug}-${suffix}` : ""
-  return { activeDialog, selectedProject, projectName, slugPreview, isLoading, error, openCreate, openRename, openDelete, closeDialog, setProjectName, submitCreate, submitRename, confirmDelete }
+  return { activeDialog, selectedProject, projectName, isLoading, error, openCreate, openRename, openDelete, closeDialog, setProjectName, submitCreate, submitRename, confirmDelete }
 }

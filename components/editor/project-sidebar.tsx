@@ -1,6 +1,7 @@
 "use client"
 
 import { Pencil, Plus, Trash2, X } from "lucide-react"
+import Link from "next/link"
 
 import { Button } from "@/components/ui/button"
 import type { Project } from "@/hooks/use-project-actions"
@@ -17,20 +18,21 @@ interface ProjectSidebarProps {
   onNewProject: () => void
   myProjects: Project[]
   sharedProjects: Project[]
+  activeProjectId?: string
   onRename: (project: Project) => void
   onDelete: (project: Project) => void
 }
 
-function ProjectList({ projects, onRename, onDelete }: { projects: Project[]; onRename?: (project: Project) => void; onDelete?: (project: Project) => void }) {
+function ProjectList({ projects, activeProjectId, onRename, onDelete }: { projects: Project[]; activeProjectId?: string; onRename?: (project: Project) => void; onDelete?: (project: Project) => void }) {
   if (projects.length > 0) {
     return (
       <div className="flex flex-col gap-1 p-3">
         {projects.map((project) => (
-          <div key={project.id} className="group flex items-center gap-2 rounded-xl px-3 py-2 hover:bg-bg-subtle">
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-sm text-copy-primary">{project.name}</p>
+          <div key={project.id} className={`group flex items-center gap-2 rounded-xl px-3 py-2 ${activeProjectId === project.id ? "bg-accent-dim" : "hover:bg-bg-subtle"}`}>
+            <Link className="min-w-0 flex-1" href={`/editor/${project.id}`} aria-current={activeProjectId === project.id ? "page" : undefined}>
+              <p className={`truncate text-sm ${activeProjectId === project.id ? "text-brand" : "text-copy-primary"}`}>{project.name}</p>
               <p className="truncate font-mono text-[11px] text-copy-muted">/{project.slug}</p>
-            </div>
+            </Link>
             {project.isOwner && onRename && onDelete && (
               <div className="flex shrink-0 opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100">
                 <Button aria-label={`Rename ${project.name}`} size="icon-xs" variant="ghost" onClick={() => onRename(project)}>
@@ -60,6 +62,7 @@ export function ProjectSidebar({
   onNewProject,
   myProjects,
   sharedProjects,
+  activeProjectId,
   onRename,
   onDelete,
 }: ProjectSidebarProps) {
@@ -88,10 +91,10 @@ export function ProjectSidebar({
         </TabsList>
 
         <TabsContent value="my-projects" className="min-h-0 flex-1 overflow-y-auto">
-          <ProjectList projects={myProjects} onRename={onRename} onDelete={onDelete} />
+          <ProjectList projects={myProjects} activeProjectId={activeProjectId} onRename={onRename} onDelete={onDelete} />
         </TabsContent>
         <TabsContent value="shared" className="min-h-0 flex-1 overflow-y-auto">
-          <ProjectList projects={sharedProjects} />
+          <ProjectList projects={sharedProjects} activeProjectId={activeProjectId} />
         </TabsContent>
       </Tabs>
 

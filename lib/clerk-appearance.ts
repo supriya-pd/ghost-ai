@@ -16,6 +16,9 @@ export const clerkAppearance = {
     borderRadius: "var(--radius)",
   },
   elements: {
-    card: "border: 1px solid var(--border-default); box-shadow: none;",
+    card: {
+      border: "1px solid var(--border-default)",
+      boxShadow: "none",
+    },
   },
 };

@@ -15,7 +15,12 @@ export default function SignUpPage() {
       <Suspense
         fallback={<p className="text-sm text-copy-muted">Loading sign up…</p>}
       >
-        <SignUp appearance={clerkAppearance} path="/sign-up" routing="path" />
+        <SignUp
+          appearance={clerkAppearance}
+          path="/sign-up"
+          routing="path"
+          signInUrl="/sign-in"
+        />
       </Suspense>
     </AuthPageShell>
   );
