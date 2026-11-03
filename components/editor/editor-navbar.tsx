@@ -1,6 +1,6 @@
 "use client"
 
-import { Bot, PanelLeftClose, PanelLeftOpen, Share2 } from "lucide-react"
+import { Bot, LayoutTemplate, PanelLeftClose, PanelLeftOpen, Share2 } from "lucide-react"
 import { UserButton } from "@clerk/nextjs"
 
 import { Button } from "@/components/ui/button"
@@ -12,6 +12,7 @@ interface EditorNavbarProps {
   isAiSidebarOpen?: boolean
   onToggleAiSidebar?: () => void
   onShare?: () => void
+  onOpenTemplates?: () => void
 }
 
 export function EditorNavbar({
@@ -21,6 +22,7 @@ export function EditorNavbar({
   isAiSidebarOpen = false,
   onToggleAiSidebar,
   onShare,
+  onOpenTemplates,
 }: EditorNavbarProps) {
   const SidebarIcon = isSidebarOpen ? PanelLeftClose : PanelLeftOpen
 
@@ -41,6 +43,7 @@ export function EditorNavbar({
         <div className="truncate px-4 text-center text-sm font-medium text-copy-primary">{projectName}</div>
 
         <div className="flex items-center justify-end">
+          {projectName && onOpenTemplates && <Button aria-label="Open starter templates" variant="ghost" onClick={onOpenTemplates}><LayoutTemplate />Templates</Button>}
           {projectName && onShare && <Button aria-label="Share project" variant="ghost" onClick={onShare}><Share2 />Share</Button>}
           {projectName && onToggleAiSidebar && <Button aria-label={isAiSidebarOpen ? "Close AI sidebar" : "Open AI sidebar"} size="icon" variant={isAiSidebarOpen ? "secondary" : "ghost"} onClick={onToggleAiSidebar}><Bot /></Button>}
           <UserButton />

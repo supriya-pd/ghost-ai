@@ -1,26 +1,36 @@
 "use client"
 
 import { Component, type DragEvent, type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react"
+import { useUser, UserButton } from "@clerk/nextjs"
 import {
   Background,
   BackgroundVariant,
   ConnectionMode,
   MarkerType,
   MiniMap,
+  type Connection,
+  type EdgeProps,
   type NodeProps,
   ReactFlow,
   ReactFlowProvider,
   useReactFlow,
 } from "@xyflow/react"
 import { ClientSideSuspense, LiveblocksProvider, RoomProvider } from "@liveblocks/react/suspense"
+import { useCanRedo, useCanUndo, useMyPresence, useOthers, useRedo, useUndo } from "@liveblocks/react"
 import { useLiveblocksFlow } from "@liveblocks/react-flow"
 
+import { CanvasControls } from "@/components/editor/canvas-controls"
 import { CanvasNodeRenderer } from "@/components/editor/canvas-node"
+import { CanvasEdgeRenderer } from "@/components/editor/canvas-edge"
 import { ShapePanel, type ShapeDragPayload } from "@/components/editor/shape-panel"
-import { DEFAULT_NODE_COLOR, type CanvasEdge, type CanvasNode, type CanvasNodeShape } from "@/types/canvas"
+import type { CanvasTemplate } from "@/components/editor/starter-templates"
+import { useKeyboardShortcuts } from "@/hooks/use-keyboard-shortcuts"
+import { DEFAULT_NODE_COLOR, NODE_COLORS, type CanvasEdge, type CanvasNode, type CanvasNodeShape, type NodeColor } from "@/types/canvas"
 
 interface LiveblocksCanvasProps {
   roomId: string
+  templateToImport?: CanvasTemplate | null
+  onTemplateImported?: () => void
 }
 
 interface CanvasErrorBoundaryProps {
@@ -63,6 +73,95 @@ function CanvasError() {
   )
 }
 
+function initials(name: string): string {
+  const parts = name.trim().split(/\s+/).filter(Boolean)
+  if (parts.length === 0) return "?"
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase()
+  return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase()
+}
+
+function PresenceOverlay() {
+  const { user } = useUser()
+  const others = useOthers()
+  const collaborators = others.filter((other) => other.id !== user?.id)
+
+  return (
+    <div className="pointer-events-none absolute right-4 top-[4.5rem] z-30 flex items-center gap-3 rounded-2xl border border-surface-border bg-bg-surface/90 px-3 py-2 shadow-xl backdrop-blur">
+      {collaborators.length > 0 && (
+        <div className="flex items-center gap-2" aria-label={`${collaborators.length} collaborator${collaborators.length === 1 ? "" : "s"} online`}>
+          <div className="flex items-center pl-2">
+            {collaborators.slice(0, 5).map((collaborator) => {
+              const name = collaborator.info.name || collaborator.id
+
+              return (
+                <div
+                  key={collaborator.connectionId}
+                  className="relative -ml-2 flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full border-2 border-bg-surface text-[10px] font-semibold text-copy-primary ring-1 ring-surface-border"
+                  style={{ backgroundColor: collaborator.info.color }}
+                  title={name}
+                  aria-label={name}
+                >
+                  {collaborator.info.avatar ? (
+                    <span
+                      aria-hidden="true"
+                      className="h-full w-full bg-cover bg-center"
+                      style={{ backgroundImage: `url(${collaborator.info.avatar})` }}
+                    />
+                  ) : (
+                    initials(name)
+                  )}
+                </div>
+              )
+            })}
+            {collaborators.length > 5 && (
+              <div
+                className="relative -ml-2 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 border-bg-surface bg-bg-subtle text-[10px] font-semibold text-copy-primary ring-1 ring-surface-border"
+                aria-label={`${collaborators.length - 5} more collaborators`}
+              >
+                +{collaborators.length - 5}
+              </div>
+            )}
+          </div>
+          <div className="h-6 w-px bg-surface-border" />
+        </div>
+      )}
+      <div className="flex h-8 w-8 items-center justify-center" aria-label="Your profile">
+        <UserButton appearance={{ elements: { avatarBox: "h-8 w-8" } }} />
+      </div>
+    </div>
+  )
+}
+
+function LiveCursors() {
+  const { user } = useUser()
+  const others = useOthers()
+
+  return (
+    <>
+      {others
+        .filter((other) => other.id !== user?.id && other.presence.cursor !== null)
+        .map((other) => {
+          const cursor = other.presence.cursor
+          if (!cursor) return null
+          const name = other.info.name || other.id
+
+          return (
+            <div
+              key={other.connectionId}
+              className="pointer-events-none absolute z-20 flex items-start gap-1.5"
+              style={{ left: cursor.x, top: cursor.y, color: other.info.color }}
+            >
+              <span className="mt-0.5 text-lg leading-none drop-shadow-md" aria-hidden="true">◆</span>
+              <span className="rounded-md px-1.5 py-0.5 text-[10px] font-medium leading-none text-bg-base shadow-md" style={{ backgroundColor: other.info.color }}>
+                {name}
+              </span>
+            </div>
+          )
+        })}
+    </>
+  )
+}
+
 function isShapeDragPayload(value: unknown): value is ShapeDragPayload {
   if (!value || typeof value !== "object") return false
 
@@ -87,18 +186,55 @@ function numericDimension(value: unknown): number | undefined {
   return Number.isFinite(parsed) ? parsed : undefined
 }
 
-function CollaborativeFlow() {
-  const { nodes, edges, onNodesChange, onEdgesChange, onConnect } = useLiveblocksFlow<CanvasNode, CanvasEdge>({
+function CollaborativeFlow({ templateToImport, onTemplateImported }: Pick<LiveblocksCanvasProps, "templateToImport" | "onTemplateImported">) {
+  const { nodes, edges, onNodesChange, onEdgesChange, onDelete: onFlowDelete } = useLiveblocksFlow<CanvasNode, CanvasEdge>({
     suspense: true,
     nodes: { initial: [] },
     edges: { initial: [] },
   })
-  const { screenToFlowPosition } = useReactFlow<CanvasNode, CanvasEdge>()
+  const reactFlow = useReactFlow<CanvasNode, CanvasEdge>()
+  const { fitView, screenToFlowPosition } = reactFlow
+  const undo = useUndo()
+  const redo = useRedo()
+  const canUndo = useCanUndo()
+  const canRedo = useCanRedo()
   const [dragPreview, setDragPreview] = useState<{ payload: ShapeDragPayload; x: number; y: number } | null>(null)
+  const [, updateMyPresence] = useMyPresence()
+  useKeyboardShortcuts(reactFlow, {
+    undo: () => {
+      if (canUndo) undo()
+    },
+    redo: () => {
+      if (canRedo) redo()
+    },
+  })
   const nodesRef = useRef(nodes)
+  const edgesRef = useRef(edges)
+  const importedTemplateIdRef = useRef<string | null>(null)
   useEffect(() => {
     nodesRef.current = nodes
   }, [nodes])
+
+  useEffect(() => {
+    edgesRef.current = edges
+  }, [edges])
+
+  useEffect(() => {
+    const legacyEdges = edges.filter((edge) => edge.type !== "canvasEdge")
+    if (legacyEdges.length === 0) return
+
+    onEdgesChange(
+      legacyEdges.map((edge) => ({
+        type: "replace" as const,
+        id: edge.id,
+        item: {
+          ...edge,
+          type: "canvasEdge",
+          data: { ...edge.data, label: edge.data?.label ?? "" },
+        },
+      })),
+    )
+  }, [edges, onEdgesChange])
 
   useEffect(() => {
     const legacyNodes = nodes.filter((node) => node.style?.width !== undefined || node.style?.height !== undefined)
@@ -126,6 +262,22 @@ function CollaborativeFlow() {
     )
   }, [nodes, onNodesChange])
 
+  useEffect(() => {
+    if (!templateToImport) {
+      importedTemplateIdRef.current = null
+      return
+    }
+    if (importedTemplateIdRef.current === templateToImport.id) return
+    importedTemplateIdRef.current = templateToImport.id
+
+    if (nodesRef.current.length > 0) onNodesChange(nodesRef.current.map((node) => ({ type: "remove" as const, id: node.id })))
+    if (edgesRef.current.length > 0) onEdgesChange(edgesRef.current.map((edge) => ({ type: "remove" as const, id: edge.id })))
+    onNodesChange(templateToImport.nodes.map((node) => ({ type: "add" as const, item: node })))
+    onEdgesChange(templateToImport.edges.map((edge) => ({ type: "add" as const, item: edge })))
+    requestAnimationFrame(() => void fitView({ duration: 220, padding: 0.2 }))
+    onTemplateImported?.()
+  }, [fitView, onEdgesChange, onNodesChange, onTemplateImported, templateToImport])
+
   const updateNodeLabel = useCallback(
     (id: string, label: string) => {
       const node = nodesRef.current.find((currentNode) => currentNode.id === id)
@@ -140,6 +292,74 @@ function CollaborativeFlow() {
       ])
     },
     [onNodesChange],
+  )
+
+  const updateNodeColor = useCallback(
+    (id: string, color: NodeColor) => {
+      const node = nodesRef.current.find((currentNode) => currentNode.id === id)
+      if (!node) return
+
+      onNodesChange([
+        {
+          type: "replace",
+          id,
+          item: { ...node, data: { ...node.data, color: color.fill, textColor: color.text } },
+        },
+      ])
+    },
+    [onNodesChange],
+  )
+
+  const updateEdgeLabel = useCallback(
+    (id: string, label: string) => {
+      const edge = edgesRef.current.find((currentEdge) => currentEdge.id === id)
+      if (!edge) return
+
+      onEdgesChange([
+        {
+          type: "replace",
+          id,
+          item: { ...edge, data: { ...edge.data, label } },
+        },
+      ])
+    },
+    [onEdgesChange],
+  )
+
+  const deleteNode = useCallback(
+    (id: string) => {
+      const deletedNodes = nodesRef.current.filter((node) => node.id === id)
+      const deletedEdges = edgesRef.current.filter((edge) => edge.source === id || edge.target === id)
+      onFlowDelete({ nodes: deletedNodes, edges: deletedEdges })
+    },
+    [onFlowDelete],
+  )
+
+  const deleteEdge = useCallback(
+    (id: string) => {
+      onFlowDelete({ nodes: [], edges: edgesRef.current.filter((edge) => edge.id === id) })
+    },
+    [onFlowDelete],
+  )
+
+  const handleConnect = useCallback(
+    (connection: Connection) => {
+      onEdgesChange([
+        {
+          type: "add",
+          item: {
+            id: `edge-${connection.source}-${connection.target}-${Date.now()}`,
+            source: connection.source,
+            sourceHandle: connection.sourceHandle,
+            target: connection.target,
+            targetHandle: connection.targetHandle,
+            type: "canvasEdge",
+            data: { label: "" },
+          },
+        },
+      ])
+    },
+    [onEdgesChange],
   )
 
   const clearLegacyNodeStyleDimensions = useCallback(
@@ -167,12 +387,23 @@ function CollaborativeFlow() {
       canvasNode: (props: NodeProps<CanvasNode>) => (
         <CanvasNodeRenderer
           {...props}
+          onColorChange={(color) => updateNodeColor(props.id, color)}
+          onDelete={() => deleteNode(props.id)}
           onLabelChange={(label) => updateNodeLabel(props.id, label)}
           onResizeStart={() => clearLegacyNodeStyleDimensions(props.id)}
         />
       ),
     }),
-    [clearLegacyNodeStyleDimensions, updateNodeLabel],
+    [clearLegacyNodeStyleDimensions, deleteNode, updateNodeColor, updateNodeLabel],
+  )
+
+  const edgeTypes = useMemo(
+    () => ({
+      canvasEdge: (props: EdgeProps<CanvasEdge>) => (
+        <CanvasEdgeRenderer {...props} onDelete={deleteEdge} onLabelChange={updateEdgeLabel} />
+      ),
+    }),
+    [deleteEdge, updateEdgeLabel],
   )
 
   function handleDragOver(event: DragEvent<HTMLDivElement>) {
@@ -213,11 +444,21 @@ function CollaborativeFlow() {
           },
           width: payload.size.width,
           height: payload.size.height,
-          data: { label: "", color: DEFAULT_NODE_COLOR, shape: payload.shape },
+          data: { label: "", color: DEFAULT_NODE_COLOR, textColor: NODE_COLORS[0].text, shape: payload.shape },
         },
       },
     ])
   }
+
+  const handleMouseMove = useCallback(
+    (event: React.MouseEvent<HTMLDivElement>) => {
+      const bounds = event.currentTarget.getBoundingClientRect()
+      updateMyPresence({ cursor: { x: event.clientX - bounds.left, y: event.clientY - bounds.top } })
+    },
+    [updateMyPresence],
+  )
+
+  const handleMouseLeave = useCallback(() => updateMyPresence({ cursor: null }), [updateMyPresence])
 
   return (
     <div
@@ -231,20 +472,35 @@ function CollaborativeFlow() {
         edges={edges}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
-        onConnect={onConnect}
+        onDelete={onFlowDelete}
+        onConnect={handleConnect}
         nodeTypes={nodeTypes}
+        edgeTypes={edgeTypes}
         connectionMode={ConnectionMode.Loose}
         defaultEdgeOptions={{
-          type: "smoothstep",
+          type: "canvasEdge",
           markerEnd: { type: MarkerType.ArrowClosed, color: "var(--text-primary)" },
           style: { stroke: "var(--text-primary)", strokeWidth: 1.5 },
         }}
         fitView
         proOptions={{ hideAttribution: true }}
+        onMouseMove={handleMouseMove}
+        onMouseLeave={handleMouseLeave}
       >
         <MiniMap />
         <Background variant={BackgroundVariant.Dots} color="var(--border-subtle)" gap={20} size={1} />
       </ReactFlow>
+      <LiveCursors />
+      <PresenceOverlay />
+      <CanvasControls
+        canUndo={canUndo}
+        canRedo={canRedo}
+        onZoomIn={() => void reactFlow.zoomIn({ duration: 180 })}
+        onZoomOut={() => void reactFlow.zoomOut({ duration: 180 })}
+        onFitView={() => void reactFlow.fitView({ duration: 220, padding: 0.2 })}
+        onUndo={undo}
+        onRedo={redo}
+      />
       {dragPreview && (
         <div
           aria-hidden="true"
@@ -252,7 +508,7 @@ function CollaborativeFlow() {
           style={{ left: dragPreview.x, top: dragPreview.y, width: dragPreview.payload.size.width, height: dragPreview.payload.size.height }}
         >
           <CanvasNodeRenderer
-            data={{ label: "", color: DEFAULT_NODE_COLOR, shape: dragPreview.payload.shape }}
+            data={{ label: "", color: DEFAULT_NODE_COLOR, textColor: NODE_COLORS[0].text, shape: dragPreview.payload.shape }}
             dragging={false}
             id="drag-preview"
             selected={false}
@@ -275,14 +531,14 @@ function CollaborativeFlow() {
   )
 }
 
-export function LiveblocksCanvas({ roomId }: LiveblocksCanvasProps) {
+export function LiveblocksCanvas({ roomId, templateToImport, onTemplateImported }: LiveblocksCanvasProps) {
   return (
     <CanvasErrorBoundary key={roomId} fallback={<CanvasError />}>
       <LiveblocksProvider authEndpoint="/api/liveblocks-auth">
-        <RoomProvider id={roomId} initialPresence={{ cursor: null, isThinking: false }}>
+        <RoomProvider id={roomId} initialPresence={{ cursor: null, thinking: false }}>
           <ClientSideSuspense fallback={<CanvasLoading />}>
             <ReactFlowProvider>
-              <CollaborativeFlow />
+            <CollaborativeFlow templateToImport={templateToImport} onTemplateImported={onTemplateImported} />
             </ReactFlowProvider>
           </ClientSideSuspense>
         </RoomProvider>

@@ -4,11 +4,11 @@ Update this file whenever the current phase, active feature, or implementation s
 
 ## Current Phase
 
-- Complete
+- In Progress
 
 ## Current Goal
 
-- Verify node resizing and inline label editing with a configured Liveblocks secret, then continue to the next feature unit.
+- Complete the presence avatars and live cursors feature, then verify the room view with a configured Liveblocks secret.
 
 ## Completed
 
@@ -63,14 +63,27 @@ Update this file whenever the current phase, active feature, or implementation s
 - Added a cursor-following ghost preview for shape drags, clearing it on drop or cancellation.
 - Added selected-node resize handles with subtle dark-canvas styling and minimum dimensions.
 - Added centered inline node label editing with empty-label placeholder text, live collaborative updates, blur/Escape completion, and canvas interaction guards.
+- Added the custom canvas edge renderer with smooth-step routing, rounded arrowed strokes, hover/selection emphasis, and a wider invisible interaction path.
+- Added collaborative inline edge label editing with midpoint positioning from `getSmoothStepPath`, growing inputs, saved pill labels, empty-edge hints, and canvas interaction guards.
+- New connections now use the custom `canvasEdge` type, and legacy smooth-step edges migrate to that type when a room loads.
+- Added three predefined starter templates with lightweight diagram previews, import actions, and a navbar entry point.
+- Template import replaces the active collaborative canvas contents and fits the view after loading.
+- Widened the starter-template dialog at desktop breakpoints and allowed card content to use the available width so template text remains readable.
+- Added shape-aware automatic node-label sizing with padding, plus selected-node and selected-connector trash controls backed by collaborative remove changes. React Flow's selected delete action is wired to the same Liveblocks mutations.
+- Corrected canvas delete controls to use `useLiveblocksFlow`'s dedicated `onDelete` mutation, including connected-edge cleanup for node deletion.
+- Added room-only Liveblocks collaborator avatars with Clerk-backed current-user rendering, initials fallbacks, five-avatar stacking, and overflow counts.
+- Added Liveblocks cursor presence updates from React Flow mouse movement, cursor cleanup on canvas leave, and colored name badges for other participants.
+- Updated the shared Liveblocks presence contract from `isThinking` to the feature-defined `thinking` field.
+- Replaced the editor AI sidebar placeholder with a separate floating `AiSidebar` component containing the AI Architect and Specs tabs, starter prompts, local chat UI, auto-resizing input, and demo spec card.
+- Added sidebar-scoped project list refreshes so collaborator shared tabs remove projects after an owner deletes them, using the authenticated projects API immediately on open and every five seconds while open.
 
 ## In Progress
 
-- Verify node resizing and inline label editing with a configured Liveblocks secret key, including a single-node shape drop followed by resize.
+- Verify presence avatars, cursor broadcasting, node and edge editing, label sizing, deletion, and starter-template replacement with configured Liveblocks credentials.
 
 ## Next Up
 
-- Verify node editing behavior with a configured Liveblocks secret key, then begin the next planned feature unit.
+- Run the full production build and verify the collaborative room behavior with a configured Liveblocks secret key, then begin the next planned feature unit.
 
 ## Open Questions
 
@@ -82,6 +95,8 @@ Update this file whenever the current phase, active feature, or implementation s
 - Add decisions that affect the system design or data model.
 
 ## Session Notes
+
+- Reviewed the custom toolbar reference and aligned its floating toolbar import and explanatory text with the Tiptap editor example.
 
 - Design-system primitives pass lint and production build validation.
 - Corrected the home page to import the local shadcn Button instead of Radix's toolbar item; lint and production build pass.
@@ -127,3 +142,15 @@ Update this file whenever the current phase, active feature, or implementation s
 - Prevented shape drops from being handled twice by using the outer canvas drop capture handler as the single insertion path and stopping propagation before React Flow can process the same event.
 - Restored node dragging by limiting React Flow's `nodrag` and `nopan` guards to the inline label textarea instead of the entire node content surface.
 - Added four hover-revealed Liveblocks/React Flow source handles per node and smooth-step arrow edges so collaborators can create connector lines between nodes.
+- Added the selected-node color toolbar with all eight predefined fill/text pairs, immediate collaborative color updates, active swatch state, and controlled text-color hover glows.
+- Node color selection keeps fill and paired text color together in collaborative node data; legacy nodes without a text color resolve their pairing from the existing fill palette.
+- Edge labels are stored in the existing Liveblocks edge data flow; no new persistence boundary or server route was introduced.
+- Added the floating canvas controls for animated zoom, fit view, and Liveblocks undo/redo with disabled history states.
+- Added `useKeyboardShortcuts` for zoom, undo, and redo shortcuts while skipping inputs, textareas, selects, and contenteditable fields.
+- Edge behavior lint and strict TypeScript validation pass. Full `npm run build` remains blocked before Next.js compilation by the existing Prisma 7 / Node 20 ESM-CJS incompatibility during `prisma generate`.
+- Starter templates use static code-defined canvas snapshots, so no new persistence boundary or server route was introduced.
+- Canvas ergonomics lint and strict TypeScript validation pass. Direct Next.js build verification is blocked in the managed sandbox when Turbopack tries to create a worker and bind to a port; the required `npx --no-install next internal agent-feedback-instructions` reporting command is likewise blocked because `npx` execution is not permitted.
+- Presence avatars and cursor changes pass strict TypeScript validation and focused ESLint. Direct Next.js build verification reached compilation but remains blocked by unavailable Google Fonts network access; end-to-end Liveblocks verification also remains pending without a configured secret.
+- The AI sidebar shell keeps the existing parent-controlled slide-in behavior and uses only existing design tokens; it is intentionally UI-only with no backend, Liveblocks, or AI generation logic.
+- The project sidebar refreshes its list from the authenticated projects endpoint while open because server-rendered project props cannot receive mutations performed in another collaborator's browser; the existing endpoint now includes ownership metadata for client-side list partitioning.
+- AI sidebar lint and strict TypeScript validation pass, and a direct `next build` completes successfully. The repository `npm run build` command remains blocked before Next.js compilation by the existing Prisma 7 / Node 20 ESM-CJS incompatibility during `prisma generate`.

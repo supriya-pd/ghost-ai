@@ -55,7 +55,12 @@ export async function GET() {
     orderBy: { updatedAt: "desc" },
   });
 
-  return Response.json({ projects });
+  return Response.json({
+    projects: projects.map((project) => ({
+      ...project,
+      isOwner: project.ownerId === userId,
+    })),
+  });
 }
 
 export async function POST(request: Request) {

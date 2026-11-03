@@ -202,11 +202,11 @@ import { Toolbar } from "@liveblocks/react-tiptap";
 />;
 ```
 
-Remember to export from `"@liveblocks/react-lexical"` for Lexical. Export and
-use `{ FloatingToolbar }` if you'd like to modify the floating version.
+Remember to export from `"@liveblocks/react-tiptap"` for Tiptap. Export and use
+`{ FloatingToolbar }` if you'd like to modify the floating version.
 
 ```tsx
-import { FloatingToolbar, Toolbar } from "@liveblocks/react-lexical";
+import { FloatingToolbar, Toolbar } from "@liveblocks/react-tiptap";
 import { Icon } from "@liveblocks/react-ui";
 import { Editor } from "@tiptap/react";
 

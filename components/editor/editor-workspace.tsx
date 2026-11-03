@@ -1,13 +1,17 @@
 "use client"
 
-import { useState } from "react"
+import { useCallback, useState } from "react"
 
 import { EditorNavbar } from "@/components/editor/editor-navbar"
+import { AiSidebar } from "@/components/editor/ai-sidebar"
 import { LiveblocksCanvas } from "@/components/editor/liveblocks-canvas"
 import { ProjectDialogs } from "@/components/editor/project-dialogs"
 import { ProjectSidebar } from "@/components/editor/project-sidebar"
 import { ShareDialog } from "@/components/editor/share-dialog"
-import { projectFromData, useProjectActions, type Project } from "@/hooks/use-project-actions"
+import { StarterTemplatesModal } from "@/components/editor/starter-templates-modal"
+import type { CanvasTemplate } from "@/components/editor/starter-templates"
+import { projectFromData, useProjectActions } from "@/hooks/use-project-actions"
+import { useProjectListRefresh } from "@/hooks/use-project-list"
 
 interface EditorWorkspaceProps {
   project: { id: string; name: string; isOwner: boolean }
@@ -19,9 +23,14 @@ export function EditorWorkspace({ project, ownedProjects, sharedProjects }: Edit
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
   const [isAiSidebarOpen, setIsAiSidebarOpen] = useState(false)
   const [isShareOpen, setIsShareOpen] = useState(false)
+  const [isTemplatesOpen, setIsTemplatesOpen] = useState(false)
+  const [templateToImport, setTemplateToImport] = useState<CanvasTemplate | null>(null)
+  const handleTemplateImported = useCallback(() => setTemplateToImport(null), [])
   const actions = useProjectActions()
-  const myProjects: Project[] = ownedProjects.map(projectFromData)
-  const collaboratorProjects: Project[] = sharedProjects.map(projectFromData)
+  const { myProjects, sharedProjects: collaboratorProjects } = useProjectListRefresh(
+    { myProjects: ownedProjects.map(projectFromData), sharedProjects: sharedProjects.map(projectFromData) },
+    isSidebarOpen,
+  )
 
   return (
     <div className="relative h-screen overflow-hidden bg-bg-base">
@@ -32,7 +41,9 @@ export function EditorWorkspace({ project, ownedProjects, sharedProjects }: Edit
         isAiSidebarOpen={isAiSidebarOpen}
         onToggleAiSidebar={() => setIsAiSidebarOpen((open) => !open)}
         onShare={() => setIsShareOpen(true)}
+        onOpenTemplates={() => setIsTemplatesOpen(true)}
       />
+      <StarterTemplatesModal open={isTemplatesOpen} onOpenChange={setIsTemplatesOpen} onImport={setTemplateToImport} />
       <ShareDialog
         projectId={project.id}
         isOwner={project.isOwner}
@@ -63,19 +74,9 @@ export function EditorWorkspace({ project, ownedProjects, sharedProjects }: Edit
       />
       <main className="absolute inset-0" aria-label="Architecture workspace">
         <section className="h-full w-full bg-bg-base" aria-label="Architecture canvas">
-          <LiveblocksCanvas roomId={project.id} />
+          <LiveblocksCanvas roomId={project.id} templateToImport={templateToImport} onTemplateImported={handleTemplateImported} />
         </section>
-        <aside
-          aria-hidden={!isAiSidebarOpen}
-          aria-label="AI sidebar placeholder"
-          inert={!isAiSidebarOpen}
-          className={`fixed right-4 top-[4.5rem] bottom-4 z-40 hidden w-80 rounded-2xl border border-surface-border bg-bg-surface/95 p-6 shadow-2xl backdrop-blur transition-transform duration-200 ease-out lg:block ${
-            isAiSidebarOpen ? "translate-x-0" : "translate-x-[calc(100%+1rem)]"
-          }`}
-        >
-          <p className="font-mono text-xs uppercase tracking-[0.2em] text-ai-text">AI assistant</p>
-          <p className="mt-3 text-sm text-copy-muted">AI chat will be available here soon.</p>
-        </aside>
+        <AiSidebar isOpen={isAiSidebarOpen} onClose={() => setIsAiSidebarOpen(false)} />
       </main>
     </div>
   )

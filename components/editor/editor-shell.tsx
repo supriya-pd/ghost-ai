@@ -6,7 +6,8 @@ import { Plus } from "lucide-react"
 import { EditorNavbar } from "@/components/editor/editor-navbar"
 import { ProjectDialogs } from "@/components/editor/project-dialogs"
 import { ProjectSidebar } from "@/components/editor/project-sidebar"
-import { projectFromData, useProjectActions, type Project } from "@/hooks/use-project-actions"
+import { projectFromData, useProjectActions } from "@/hooks/use-project-actions"
+import { useProjectListRefresh } from "@/hooks/use-project-list"
 import { Button } from "@/components/ui/button"
 
 interface EditorShellProps { ownedProjects: Array<{ id: string; name: string; isOwner: boolean }>; sharedProjects: Array<{ id: string; name: string; isOwner: boolean }> }
@@ -14,8 +15,10 @@ interface EditorShellProps { ownedProjects: Array<{ id: string; name: string; is
 export function EditorShell({ ownedProjects, sharedProjects }: EditorShellProps) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
   const actions = useProjectActions()
-  const myProjects: Project[] = ownedProjects.map(projectFromData)
-  const collaboratorProjects: Project[] = sharedProjects.map(projectFromData)
+  const { myProjects, sharedProjects: collaboratorProjects } = useProjectListRefresh(
+    { myProjects: ownedProjects.map(projectFromData), sharedProjects: sharedProjects.map(projectFromData) },
+    isSidebarOpen,
+  )
 
   return (
     <div className="min-h-screen bg-bg-base">

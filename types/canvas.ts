@@ -21,13 +21,19 @@ export const NODE_COLORS = [
   { fill: "#062822", text: "#0AC7B4" },
 ] as const
 
+export type NodeColor = (typeof NODE_COLORS)[number]
+
 export interface CanvasNodeData extends Record<string, unknown> {
   label: string
   color: string
+  textColor?: string
   shape: CanvasNodeShape
 }
 
 export type CanvasNode = Node<CanvasNodeData, "canvasNode">
 
-export type CanvasEdgeData = Record<string, never>
+export interface CanvasEdgeData extends Record<string, unknown> {
+  label?: string
+}
+
 export type CanvasEdge = Edge<CanvasEdgeData, "canvasEdge">
