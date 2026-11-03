@@ -8,7 +8,7 @@ Update this file whenever the current phase, active feature, or implementation s
 
 ## Current Goal
 
-- Verify the base collaborative canvas with a configured Liveblocks secret and continue to the next feature unit.
+- Verify node resizing and inline label editing with a configured Liveblocks secret, then continue to the next feature unit.
 
 ## Completed
 
@@ -59,14 +59,18 @@ Update this file whenever the current phase, active feature, or implementation s
 - Added the bottom shape panel with draggable shape payloads containing each shape's default size.
 - Added drop-to-canvas node creation with React Flow coordinate conversion, generated IDs, default color, empty labels, and the selected shape value.
 - Added the basic `canvasNode` renderer so newly dropped nodes are visible.
+- Added shape-specific CSS and SVG node rendering with selected-state borders.
+- Added a cursor-following ghost preview for shape drags, clearing it on drop or cancellation.
+- Added selected-node resize handles with subtle dark-canvas styling and minimum dimensions.
+- Added centered inline node label editing with empty-label placeholder text, live collaborative updates, blur/Escape completion, and canvas interaction guards.
 
 ## In Progress
 
-- None.
+- Verify node resizing and inline label editing with a configured Liveblocks secret key, including a single-node shape drop followed by resize.
 
 ## Next Up
 
-- Verify the shape panel and dropped nodes with a configured Liveblocks secret key, then begin the next planned feature unit.
+- Verify node editing behavior with a configured Liveblocks secret key, then begin the next planned feature unit.
 
 ## Open Questions
 
@@ -103,7 +107,10 @@ Update this file whenever the current phase, active feature, or implementation s
 - The base canvas owns only collaborative React Flow state and presentation; controls, custom node/edge rendering, persistence, and AI behavior remain out of scope for this unit.
 - Base canvas lint and strict TypeScript validation pass; production build remains blocked before Next.js compilation by the existing Prisma 7 / Node 20 ESM-CJS incompatibility.
 - The direct `next build` stage passes successfully after bypassing the blocked Prisma generation step.
+- Node-shape TypeScript validation, lint, and direct `next build` pass; the full `npm run build` remains blocked by the existing Prisma 7 / Node 20 ESM-CJS incompatibility during `prisma generate`.
 - Hid React Flow's built-in attribution label from the collaborative canvas surface.
+- Node shapes use CSS for rectangle, pill, and circle variants, while diamond, hexagon, and cylinder use responsive inline SVG geometry.
+- Shape previews reuse the existing node renderer and payload dimensions without changing dropped-node creation.
 - Shape imports use the existing custom `canvasNode` type; shape-specific visuals remain intentionally deferred.
 - Wrapped the collaborative canvas in `ReactFlowProvider` so shape-drop coordinate conversion has the required React Flow context at runtime.
 - Preserved the latest dragover pointer position for reliable shape placement when the browser reports an invalid drop-event coordinate.
@@ -112,3 +119,11 @@ Update this file whenever the current phase, active feature, or implementation s
 - Reviewed the current canvas issues: the workspace flex layout was shrinking the canvas beside the AI panel, the canvas surface lacked an explicit edge-to-edge base background, and the project sidebar transition left too little off-screen clearance. The drag pipeline already had the required draggable source and capture handlers, but now uses React Flow's drop coordinates directly with a plain-text data-transfer fallback for browser compatibility.
 - Made the editor canvas occupy the full viewport behind fixed overlay sidebars, removed layout participation from the AI sidebar, ensured the left sidebar has no closed-state pointer area or visible remnant, and kept the dotted React Flow background flush with the base surface.
 - Fixed project sidebar delete (and rename/create dialog actions) in the workspace by mounting the shared `ProjectDialogs` component; the action hook was receiving clicks, but its dialog state had no rendered consumer on project routes.
+- Node resizing uses React Flow's `NodeResizer`, whose dimension changes flow through the existing Liveblocks `onNodesChange` adapter and enforce an 80px by 48px minimum.
+- Inline label changes use the existing Liveblocks flow `replace` change with the current node data, so each typed update is synchronized to collaborators without changing canvas storage boundaries.
+- Fixed resize rendering for legacy nodes by removing conflicting `style.width` and `style.height` values on resize; new nodes now store dimensions in React Flow's top-level `width` and `height` fields.
+- Confirmed `NodeResizer` exposes both corner handles and four edge resize lines, with the edge controls retaining the dark-canvas accent styling.
+- Added a collaborative room-load migration for legacy nodes that still store dimensions under `style`, moving those dimensions to React Flow's top-level fields and removing the duplicate-rendering source.
+- Prevented shape drops from being handled twice by using the outer canvas drop capture handler as the single insertion path and stopping propagation before React Flow can process the same event.
+- Restored node dragging by limiting React Flow's `nodrag` and `nopan` guards to the inline label textarea instead of the entire node content surface.
+- Added four hover-revealed Liveblocks/React Flow source handles per node and smooth-step arrow edges so collaborators can create connector lines between nodes.

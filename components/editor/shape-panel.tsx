@@ -15,6 +15,11 @@ export interface ShapeDragPayload {
   size: ShapeSize
 }
 
+interface ShapePanelProps {
+  onDragStart?: (payload: ShapeDragPayload) => void
+  onDragEnd?: () => void
+}
+
 const SHAPES: Array<{ shape: CanvasNodeShape; label: string; size: ShapeSize; icon: typeof Square }> = [
   { shape: "rectangle", label: "Rectangle", size: { width: 180, height: 96 }, icon: Square },
   { shape: "diamond", label: "Diamond", size: { width: 150, height: 120 }, icon: Diamond },
@@ -24,14 +29,19 @@ const SHAPES: Array<{ shape: CanvasNodeShape; label: string; size: ShapeSize; ic
   { shape: "hexagon", label: "Hexagon", size: { width: 180, height: 108 }, icon: Hexagon },
 ]
 
-function handleDragStart(event: DragEvent<HTMLButtonElement>, payload: ShapeDragPayload) {
+function handleDragStart(
+  event: DragEvent<HTMLButtonElement>,
+  payload: ShapeDragPayload,
+  onDragStart?: (payload: ShapeDragPayload) => void,
+) {
   const serializedPayload = JSON.stringify(payload)
   event.dataTransfer.effectAllowed = "copy"
   event.dataTransfer.setData("application/x-ghost-ai-shape", serializedPayload)
   event.dataTransfer.setData("text/plain", serializedPayload)
+  onDragStart?.(payload)
 }
 
-export function ShapePanel() {
+export function ShapePanel({ onDragStart, onDragEnd }: ShapePanelProps) {
   return (
     <div
       aria-label="Add a shape"
@@ -44,7 +54,8 @@ export function ShapePanel() {
           draggable
           aria-label={`Drag ${label.toLowerCase()} onto the canvas`}
           title={label}
-          onDragStart={(event) => handleDragStart(event, { shape, size })}
+          onDragStart={(event) => handleDragStart(event, { shape, size }, onDragStart)}
+          onDragEnd={onDragEnd}
           className="flex h-9 w-9 cursor-grab items-center justify-center rounded-full text-copy-muted transition-colors hover:bg-bg-subtle hover:text-brand active:cursor-grabbing"
         >
           <Icon className="h-4 w-4" strokeWidth={1.75} />
