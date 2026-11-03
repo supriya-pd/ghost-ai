@@ -74,7 +74,7 @@ export function ProjectSidebar({
       aria-label="Project navigation"
       inert={!isOpen}
       className={`fixed top-14 bottom-4 left-4 z-40 flex w-72 flex-col rounded-2xl border border-surface-border bg-bg-surface shadow-2xl transition-transform duration-200 ease-out ${
-        isOpen ? "translate-x-0" : "-translate-x-[calc(100%+1rem)]"
+        isOpen ? "translate-x-0 pointer-events-auto" : "-translate-x-[calc(100%+2rem)] pointer-events-none"
       }`}
     >
       <div className="flex h-14 items-center justify-between border-b border-surface-border px-4">

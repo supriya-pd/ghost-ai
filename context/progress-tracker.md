@@ -8,7 +8,7 @@ Update this file whenever the current phase, active feature, or implementation s
 
 ## Current Goal
 
-- Build the server-checked editor workspace shell defined in `context/feature-specs/08-editor-workspace-shell.md`.
+- Verify the base collaborative canvas with a configured Liveblocks secret and continue to the next feature unit.
 
 ## Completed
 
@@ -48,6 +48,17 @@ Update this file whenever the current phase, active feature, or implementation s
 - Fixed new project creation to open the newly created project's `/editor/[roomId]` workspace using the ID returned by the create API.
 - Routed editor authentication through the server pages so signed-out room links use the custom sign-in shell instead of Clerk middleware's standalone fallback.
 - Made the sign-in and sign-up Clerk links explicitly target the app's custom `/sign-in` and `/sign-up` routes, keeping the branded auth shell during navigation.
+- Added `lib/collaborators.ts` with email normalization and best-effort Clerk Backend API enrichment (display name and avatar) for collaborator emails, falling back to email only.
+- Added `GET`/`POST /api/projects/[projectId]/collaborators` and `DELETE /api/projects/[projectId]/collaborators/[collaboratorId]`; invite and remove enforce project ownership server-side (`401`, `403`, `404`, `409`).
+- Added the `useCollaborators` hook and `ShareDialog` (owner invite/remove, read-only list for collaborators, `Copied!` link feedback) and enabled the navbar `Share` button.
+- Defined Liveblocks presence and user metadata types for cursors, thinking state, display names, avatars, and cursor colors.
+- Added the cached Liveblocks node client with deterministic cursor color assignment.
+- Added `POST /api/liveblocks-auth` with Clerk authentication, project access checks, private-room creation, and per-session write authorization.
+- Added shared canvas node and edge types in `types/canvas.ts`.
+- Replaced the editor canvas placeholder with a Liveblocks-backed React Flow canvas using room providers, suspense loading, connection error fallback, loose connections, fit-to-view, minimap, and a dot background.
+- Added the bottom shape panel with draggable shape payloads containing each shape's default size.
+- Added drop-to-canvas node creation with React Flow coordinate conversion, generated IDs, default color, empty labels, and the selected shape value.
+- Added the basic `canvasNode` renderer so newly dropped nodes are visible.
 
 ## In Progress
 
@@ -55,11 +66,12 @@ Update this file whenever the current phase, active feature, or implementation s
 
 ## Next Up
 
-- Begin the next planned feature unit after verifying the editor workspace shell implementation.
+- Verify the shape panel and dropped nodes with a configured Liveblocks secret key, then begin the next planned feature unit.
 
 ## Open Questions
 
 - The local `.env` currently exposes the database connection under the misspelled `DATABSE_URL` key; Prisma commands were run with that value mapped to the required `DATABASE_URL` name. Rename the local key before relying on automatic environment loading.
+- Liveblocks room authorization requires `LIVEBLOCKS_SECRET_KEY` in the runtime environment for end-to-end verification.
 
 ## Architecture Decisions
 
@@ -82,7 +94,21 @@ Update this file whenever the current phase, active feature, or implementation s
 - Hardened editor project loading against transient Clerk `currentUser()` aborts so the `/editor` route does not enter a retry/compile-looking failure loop.
 - Updated the production build script to generate the Prisma client before compiling Next.js.
 - Updated the Clerk card appearance override to use structured border and box-shadow styles.
-- Workspace access is checked by project ID against the authenticated Clerk user ID or primary email collaborator record; sharing remains intentionally disabled until its feature unit.
+- Workspace access is checked by project ID against the authenticated Clerk user ID or primary email collaborator record.
+- Collaborator emails are stored trimmed and lowercased; no local user table is added, and Clerk lookup failures never block the collaborator list.
 - Editor workspace lint and strict TypeScript validation pass. Production build validation is currently blocked before Next compilation by the existing Prisma 7 / Node 20 ESM-CJS incompatibility in `@prisma/dev`.
 - Create-project navigation now validates the API response before routing, so a malformed success response surfaces an actionable error instead of navigating to the editor home.
 - Editor routes remain protected by server-side identity checks, with room links preserving their destination in the sign-in redirect.
+- Liveblocks rooms use project IDs as private room IDs; authorized project members receive explicit `*:write` access from the auth route.
+- The base canvas owns only collaborative React Flow state and presentation; controls, custom node/edge rendering, persistence, and AI behavior remain out of scope for this unit.
+- Base canvas lint and strict TypeScript validation pass; production build remains blocked before Next.js compilation by the existing Prisma 7 / Node 20 ESM-CJS incompatibility.
+- The direct `next build` stage passes successfully after bypassing the blocked Prisma generation step.
+- Hid React Flow's built-in attribution label from the collaborative canvas surface.
+- Shape imports use the existing custom `canvasNode` type; shape-specific visuals remain intentionally deferred.
+- Wrapped the collaborative canvas in `ReactFlowProvider` so shape-drop coordinate conversion has the required React Flow context at runtime.
+- Preserved the latest dragover pointer position for reliable shape placement when the browser reports an invalid drop-event coordinate.
+- Attached shape drag handlers directly to the React Flow surface so the canvas receives the browser drop event.
+- Added capture-phase canvas drop handling so React Flow's internal pane handlers cannot prevent shape drops from reaching the Liveblocks node mutation.
+- Reviewed the current canvas issues: the workspace flex layout was shrinking the canvas beside the AI panel, the canvas surface lacked an explicit edge-to-edge base background, and the project sidebar transition left too little off-screen clearance. The drag pipeline already had the required draggable source and capture handlers, but now uses React Flow's drop coordinates directly with a plain-text data-transfer fallback for browser compatibility.
+- Made the editor canvas occupy the full viewport behind fixed overlay sidebars, removed layout participation from the AI sidebar, ensured the left sidebar has no closed-state pointer area or visible remnant, and kept the dotted React Flow background flush with the base surface.
+- Fixed project sidebar delete (and rename/create dialog actions) in the workspace by mounting the shared `ProjectDialogs` component; the action hook was receiving clicks, but its dialog state had no rendered consumer on project routes.

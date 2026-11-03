@@ -11,6 +11,7 @@ interface EditorNavbarProps {
   projectName?: string
   isAiSidebarOpen?: boolean
   onToggleAiSidebar?: () => void
+  onShare?: () => void
 }
 
 export function EditorNavbar({
@@ -19,6 +20,7 @@ export function EditorNavbar({
   projectName,
   isAiSidebarOpen = false,
   onToggleAiSidebar,
+  onShare,
 }: EditorNavbarProps) {
   const SidebarIcon = isSidebarOpen ? PanelLeftClose : PanelLeftOpen
 
@@ -39,7 +41,7 @@ export function EditorNavbar({
         <div className="truncate px-4 text-center text-sm font-medium text-copy-primary">{projectName}</div>
 
         <div className="flex items-center justify-end">
-          {projectName && <Button aria-label="Share project" title="Sharing coming soon" size="icon" variant="ghost" disabled><Share2 /></Button>}
+          {projectName && onShare && <Button aria-label="Share project" variant="ghost" onClick={onShare}><Share2 />Share</Button>}
           {projectName && onToggleAiSidebar && <Button aria-label={isAiSidebarOpen ? "Close AI sidebar" : "Open AI sidebar"} size="icon" variant={isAiSidebarOpen ? "secondary" : "ghost"} onClick={onToggleAiSidebar}><Bot /></Button>}
           <UserButton />
         </div>
