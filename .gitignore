@@ -23,6 +23,8 @@
 # misc
 .DS_Store
 *.pem
+/context/current-issues*
+/context/screenshots/
 
 # debug
 npm-debug.log*
