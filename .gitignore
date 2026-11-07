@@ -22,7 +22,10 @@
 
 # misc
 .DS_Store
+.agents/
 *.pem
+/context/current-issues*
+/context/screenshots/
 
 # debug
 npm-debug.log*
