@@ -25,12 +25,16 @@ import { CanvasEdgeRenderer } from "@/components/editor/canvas-edge"
 import { ShapePanel, type ShapeDragPayload } from "@/components/editor/shape-panel"
 import type { CanvasTemplate } from "@/components/editor/starter-templates"
 import { useKeyboardShortcuts } from "@/hooks/use-keyboard-shortcuts"
+import { useCanvasAutosave, type CanvasSaveStatus } from "@/hooks/use-canvas-autosave"
+import type { CanvasSnapshot } from "@/lib/canvas-snapshot"
 import { DEFAULT_NODE_COLOR, NODE_COLORS, type CanvasEdge, type CanvasNode, type CanvasNodeShape, type NodeColor } from "@/types/canvas"
 
 interface LiveblocksCanvasProps {
   roomId: string
   templateToImport?: CanvasTemplate | null
   onTemplateImported?: () => void
+  onSaveStatusChange?: (status: CanvasSaveStatus, isLoading: boolean, hasUnsavedChanges: boolean) => void
+  onManualSaveChange?: (save: (() => Promise<void>) | null) => void
 }
 
 interface CanvasErrorBoundaryProps {
@@ -186,7 +190,7 @@ function numericDimension(value: unknown): number | undefined {
   return Number.isFinite(parsed) ? parsed : undefined
 }
 
-function CollaborativeFlow({ templateToImport, onTemplateImported }: Pick<LiveblocksCanvasProps, "templateToImport" | "onTemplateImported">) {
+function CollaborativeFlow({ roomId, templateToImport, onTemplateImported, onSaveStatusChange, onManualSaveChange }: Pick<LiveblocksCanvasProps, "roomId" | "templateToImport" | "onTemplateImported" | "onSaveStatusChange" | "onManualSaveChange">) {
   const { nodes, edges, onNodesChange, onEdgesChange, onDelete: onFlowDelete } = useLiveblocksFlow<CanvasNode, CanvasEdge>({
     suspense: true,
     nodes: { initial: [] },
@@ -211,6 +215,32 @@ function CollaborativeFlow({ templateToImport, onTemplateImported }: Pick<Livebl
   const nodesRef = useRef(nodes)
   const edgesRef = useRef(edges)
   const importedTemplateIdRef = useRef<string | null>(null)
+  const loadCanvas = useCallback(
+    (snapshot: CanvasSnapshot) => {
+      if (nodesRef.current.length > 0 || edgesRef.current.length > 0) return
+
+      onNodesChange(snapshot.nodes.map((node) => ({ type: "add" as const, item: node })))
+      onEdgesChange(snapshot.edges.map((edge) => ({ type: "add" as const, item: edge })))
+      requestAnimationFrame(() => void fitView({ duration: 220, padding: 0.2 }))
+    },
+    [fitView, onEdgesChange, onNodesChange],
+  )
+  const { saveStatus, isLoading: isCanvasLoading, hasUnsavedChanges, save } = useCanvasAutosave({
+    projectId: roomId,
+    nodes,
+    edges,
+    onLoad: loadCanvas,
+  })
+
+  useEffect(() => {
+    onSaveStatusChange?.(saveStatus, isCanvasLoading, hasUnsavedChanges)
+  }, [hasUnsavedChanges, isCanvasLoading, onSaveStatusChange, saveStatus])
+
+  useEffect(() => {
+    onManualSaveChange?.(save)
+    return () => onManualSaveChange?.(null)
+  }, [onManualSaveChange, save])
+
   useEffect(() => {
     nodesRef.current = nodes
   }, [nodes])
@@ -472,7 +502,7 @@ function CollaborativeFlow({ templateToImport, onTemplateImported }: Pick<Livebl
         edges={edges}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
-        onDelete={onFlowDelete}
+        deleteKeyCode={null}
         onConnect={handleConnect}
         nodeTypes={nodeTypes}
         edgeTypes={edgeTypes}
@@ -482,7 +512,6 @@ function CollaborativeFlow({ templateToImport, onTemplateImported }: Pick<Livebl
           markerEnd: { type: MarkerType.ArrowClosed, color: "var(--text-primary)" },
           style: { stroke: "var(--text-primary)", strokeWidth: 1.5 },
         }}
-        fitView
         proOptions={{ hideAttribution: true }}
         onMouseMove={handleMouseMove}
         onMouseLeave={handleMouseLeave}
@@ -531,14 +560,14 @@ function CollaborativeFlow({ templateToImport, onTemplateImported }: Pick<Livebl
   )
 }
 
-export function LiveblocksCanvas({ roomId, templateToImport, onTemplateImported }: LiveblocksCanvasProps) {
+export function LiveblocksCanvas({ roomId, templateToImport, onTemplateImported, onSaveStatusChange, onManualSaveChange }: LiveblocksCanvasProps) {
   return (
     <CanvasErrorBoundary key={roomId} fallback={<CanvasError />}>
       <LiveblocksProvider authEndpoint="/api/liveblocks-auth">
         <RoomProvider id={roomId} initialPresence={{ cursor: null, thinking: false }}>
           <ClientSideSuspense fallback={<CanvasLoading />}>
             <ReactFlowProvider>
-            <CollaborativeFlow templateToImport={templateToImport} onTemplateImported={onTemplateImported} />
+            <CollaborativeFlow roomId={roomId} templateToImport={templateToImport} onTemplateImported={onTemplateImported} onSaveStatusChange={onSaveStatusChange} onManualSaveChange={onManualSaveChange} />
             </ReactFlowProvider>
           </ClientSideSuspense>
         </RoomProvider>

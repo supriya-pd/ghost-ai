@@ -10,6 +10,7 @@ import { ProjectSidebar } from "@/components/editor/project-sidebar"
 import { ShareDialog } from "@/components/editor/share-dialog"
 import { StarterTemplatesModal } from "@/components/editor/starter-templates-modal"
 import type { CanvasTemplate } from "@/components/editor/starter-templates"
+import type { CanvasSaveStatus } from "@/hooks/use-canvas-autosave"
 import { projectFromData, useProjectActions } from "@/hooks/use-project-actions"
 import { useProjectListRefresh } from "@/hooks/use-project-list"
 
@@ -24,8 +25,20 @@ export function EditorWorkspace({ project, ownedProjects, sharedProjects }: Edit
   const [isAiSidebarOpen, setIsAiSidebarOpen] = useState(false)
   const [isShareOpen, setIsShareOpen] = useState(false)
   const [isTemplatesOpen, setIsTemplatesOpen] = useState(false)
+  const [saveStatus, setSaveStatus] = useState<CanvasSaveStatus>("idle")
+  const [isCanvasLoading, setIsCanvasLoading] = useState(true)
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
+  const [saveCanvas, setSaveCanvas] = useState<(() => Promise<void>) | null>(null)
   const [templateToImport, setTemplateToImport] = useState<CanvasTemplate | null>(null)
   const handleTemplateImported = useCallback(() => setTemplateToImport(null), [])
+  const handleSaveStatusChange = useCallback((status: CanvasSaveStatus, loading: boolean, dirty: boolean) => {
+    setSaveStatus(status)
+    setIsCanvasLoading(loading)
+    setHasUnsavedChanges(dirty)
+  }, [])
+  const handleManualSaveChange = useCallback((save: (() => Promise<void>) | null) => {
+    setSaveCanvas(() => save)
+  }, [])
   const actions = useProjectActions()
   const { myProjects, sharedProjects: collaboratorProjects } = useProjectListRefresh(
     { myProjects: ownedProjects.map(projectFromData), sharedProjects: sharedProjects.map(projectFromData) },
@@ -42,6 +55,11 @@ export function EditorWorkspace({ project, ownedProjects, sharedProjects }: Edit
         onToggleAiSidebar={() => setIsAiSidebarOpen((open) => !open)}
         onShare={() => setIsShareOpen(true)}
         onOpenTemplates={() => setIsTemplatesOpen(true)}
+        saveStatus={saveStatus}
+        isCanvasLoading={isCanvasLoading}
+        hasUnsavedChanges={hasUnsavedChanges}
+        onSave={saveCanvas ?? undefined}
+        showUserButton={false}
       />
       <StarterTemplatesModal open={isTemplatesOpen} onOpenChange={setIsTemplatesOpen} onImport={setTemplateToImport} />
       <ShareDialog
@@ -74,7 +92,7 @@ export function EditorWorkspace({ project, ownedProjects, sharedProjects }: Edit
       />
       <main className="absolute inset-0" aria-label="Architecture workspace">
         <section className="h-full w-full bg-bg-base" aria-label="Architecture canvas">
-          <LiveblocksCanvas roomId={project.id} templateToImport={templateToImport} onTemplateImported={handleTemplateImported} />
+          <LiveblocksCanvas roomId={project.id} templateToImport={templateToImport} onTemplateImported={handleTemplateImported} onSaveStatusChange={handleSaveStatusChange} onManualSaveChange={handleManualSaveChange} />
         </section>
         <AiSidebar isOpen={isAiSidebarOpen} onClose={() => setIsAiSidebarOpen(false)} />
       </main>

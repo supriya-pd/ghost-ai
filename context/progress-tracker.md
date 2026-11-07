@@ -10,8 +10,15 @@ Update this file whenever the current phase, active feature, or implementation s
 
 - Complete the presence avatars and live cursors feature, then verify the room view with a configured Liveblocks secret.
 
+## Pending Testing
+
+- Disabled React Flow keyboard deletion while preserving explicit Liveblocks-backed deletion, removed automatic fit-to-view on node drops, allowed Clerk avatar images from img.clerk.com, and hid the navbar UserButton in the workspace; issues 2-5 need manual verification.
+- Scoped custom node SVG styles to the node shape so they no longer leak fills onto connector paths; connector contrast is improved and visual verification is pending.
+- Moved the workspace Save button beside Templates in the navbar's right-side actions and matched the Templates button sizing, spacing, and typography.
+
 ## Completed
 
+- Tested the explicit workspace Save button, dirty-state handling, transient save feedback, and private Vercel Blob save/load; issue 1 is tested.
 - Configured shadcn/ui with Radix UI and Lucide icons.
 - Added Button, Card, Dialog, Input, Tabs, Textarea, and ScrollArea primitives.
 - Added the reusable `cn()` helper in `lib/utils.ts`.

@@ -76,10 +76,11 @@ export function CanvasEdgeRenderer({
   const isActive = selected || isHovered || isEditing
   const edgeStyle = {
     ...style,
-    stroke: isActive ? "var(--text-primary)" : "var(--text-muted)",
+    fill: "none",
+    stroke: "var(--text-primary)",
     strokeLinecap: "round" as const,
-    strokeOpacity: isActive ? 1 : 0.72,
-    strokeWidth: isActive ? 1.8 : 1.5,
+    strokeOpacity: isActive ? 1 : 0.9,
+    strokeWidth: isActive ? 2.5 : 2,
   }
 
   return (

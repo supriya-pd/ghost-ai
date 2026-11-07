@@ -11,6 +11,7 @@ export interface AccessibleProject {
   id: string
   name: string
   ownerId: string
+  canvasJsonPath: string | null
 }
 
 export async function getCurrentIdentity(): Promise<CurrentIdentity> {
@@ -41,6 +42,6 @@ export async function getAccessibleProject(projectId: string): Promise<Accessibl
           ]
         : [{ ownerId: identity.userId }],
     },
-    select: { id: true, name: true, ownerId: true },
+    select: { id: true, name: true, ownerId: true, canvasJsonPath: true },
   })
 }

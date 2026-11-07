@@ -191,7 +191,7 @@ export function CanvasNodeRenderer({ data, height, onColorChange, onDelete, onLa
         {resizeControls}
         <svg
           aria-hidden="true"
-          className="absolute inset-0 h-full w-full"
+          className="ghost-canvas-node-shape absolute inset-0 h-full w-full"
           preserveAspectRatio="none"
           viewBox="0 0 100 100"
         >
@@ -205,7 +205,9 @@ export function CanvasNodeRenderer({ data, height, onColorChange, onDelete, onLa
           )}
           <style>{
             `
-              polygon, path, ellipse {
+              .ghost-canvas-node-shape polygon,
+              .ghost-canvas-node-shape path,
+              .ghost-canvas-node-shape ellipse {
                 fill: ${data.color};
                 stroke: ${selected ? "var(--accent-primary)" : "var(--border-subtle)"};
                 stroke-width: ${selected ? 2 : 1};
